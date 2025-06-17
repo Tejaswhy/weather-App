@@ -1,8 +1,7 @@
 from datetime import datetime, time, timedelta
 import io
 import tkinter as tk
-from tkinter import Canvas, messagebox
-from PIL import Image, ImageTk
+from tkinter import Canvas, messagebox`
 import requests
 import matplotlib.pyplot as plt
 import math
