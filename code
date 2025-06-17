@@ -1,0 +1,640 @@
+from datetime import datetime, time, timedelta
+import io
+import tkinter as tk
+from tkinter import Canvas, messagebox
+from PIL import Image, ImageTk
+import requests
+import matplotlib.pyplot as plt
+import math
+from PIL import Image, ImageTk
+from PIL import Image, ImageSequence
+
+
+Y_OFFSET = 200
+
+city_coordinates = {
+    "Delhi": (28.6100, 77.2300),
+    "Mumbai": (19.0761, 72.8775),
+    "Kolkāta": (22.5675, 88.3700),
+    "Bangalore": (12.9789, 77.5917),
+    "Chennai": (13.0825, 80.2750),
+    "Hyderābād": (17.3617, 78.4747),
+    "Pune": (18.5203, 73.8567),
+    "Ahmedabad": (23.0225, 72.5714),
+    "Sūrat": (21.1702, 72.8311),
+    "Lucknow": (26.8500, 80.9500),
+    "Jaipur": (26.9000, 75.8000),
+    "Kanpur": (26.4499, 80.3319),
+    "Mirzāpur": (25.1460, 82.5690),
+    "Nāgpur": (21.1497, 79.0806),
+    "Rājkot": (22.3000, 70.7833),
+    "Vishākhapatnam": (17.7042, 83.2978),
+    "Indore": (22.7167, 75.8472),
+    "Thāne": (19.1972, 72.9722),
+    "Bhopāl": (23.2599, 77.4126),
+    "Patna": (25.5940, 85.1376),
+    "Āgra": (27.1800, 78.0200),
+    "Madurai": (9.9252, 78.1198),
+    "Prayagraj": (25.4358, 81.8464),
+    "Nāsik": (19.9975, 73.7898),
+    "Meerut": (28.9800, 77.7100),
+    "Aurangābād": (19.8800, 75.3200),
+    "Dhanbād": (23.7998, 86.4305),
+    "Amritsar": (31.6400, 74.8600),
+    "Rānchi": (23.3600, 85.3300),
+    "Chandīgarh": (30.7500, 76.7800),
+    "Vijayavāda": (16.5193, 80.6305),
+    "Jodhpur": (26.2800, 73.0200),
+    "Raipur": (21.2444, 81.6306),
+    "Kota": (25.1800, 75.8300),
+    "Dāsarhalli": (13.0465, 77.5130),
+    "New Delhi": (28.6139, 77.2089),
+    "Tiruvottiyūr": (13.1600, 80.3000),
+    "Puducherry": (11.9167, 79.8167),
+    "Secunderābād": (17.4399, 78.4983),
+    "Shimla": (31.1033, 77.1722),
+    "Puri": (19.8000, 85.8167),
+    "Yelahanka": (13.1007, 77.5963),
+    "Hesarghatta": (13.1391, 77.4783),
+    "Bommayapālaiyam": (11.9922, 79.8499),
+    "Bāli": (25.4810, 85.2227),
+    "Vājarhalli": (13.1022, 77.4111),
+    "Alija Kotla": (17.2333, 78.5500),
+    "New York": (40.7128, -74.0060),
+    "London": (51.5072, -0.1276),
+    "Paris": (48.8566, 2.3522),
+    "Tokyo": (35.6895, 139.6917),
+    "Sydney": (-33.8688, 151.2093),
+    "Dubai": (25.276987, 55.296249),
+    "Los Angeles": (34.0522, -118.2437),
+    "Berlin": (52.5200, 13.4050),
+    "Singapore": (1.3521, 103.8198),
+    "Toronto": (43.651070, -79.347015),
+    "Barcelona": (41.3851, 2.1734),
+    "Rome": (41.9028, 12.4964),
+    "Moscow": (55.7558, 37.6173),
+    "Beijing": (39.9042, 116.4074),
+    "Seoul": (37.5665, 126.9780),
+    "Bangkok": (13.7563, 100.5018),
+    "Istanbul": (41.0082, 28.9784),
+    "Cape Town": (-33.9249, 18.4241),
+    "Rio de Janeiro": (-22.9068, -43.1729),
+    "Mexico City": (19.4326, -99.1332),
+    "Amsterdam": (52.3676, 4.9041),
+    "Zurich": (47.3769, 8.5417),
+    "Kuala Lumpur": (3.1390, 101.6869),
+    "Buenos Aires": (-34.6037, -58.3816),
+    "Auckland": (-36.8485, 174.7633)
+}
+
+win = tk.Tk()
+win.geometry("1800x1100") 
+win.title("Weather App")
+
+scrollbar = tk.Scrollbar(win, orient="vertical")
+scrollbar.pack(side="right", fill="y")
+
+main_canvas = tk.Canvas(win, yscrollcommand=scrollbar.set, width=1800, height=1100)
+main_canvas.pack(side="left", fill="both", expand=True)
+scrollbar.config(command=main_canvas.yview)
+
+scroll_frame = tk.Frame(main_canvas, height=1100)
+main_canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+
+def on_configure(event):
+    main_canvas.configure(scrollregion=main_canvas.bbox("all"))
+scroll_frame.bind("<Configure>", on_configure)
+
+main_canvas.bind_all("<MouseWheel>", lambda event: main_canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+bg_image = Image.open("/Users/tejasy/Desktop/create/gi.png").resize((1600, 1100))
+bg = ImageTk.PhotoImage(bg_image)
+main_canvas.create_image(0, 0, image=bg, anchor="nw")
+
+entry = tk.Entry(win, bg="white", fg="black", bd=0, insertbackground="black", font=("google sans regular", 25), width=15)
+main_canvas.create_window(1300, 50, window=entry)
+
+listbox = tk.Listbox(win, width=30, height=10, font=("google sans regular", 25))
+listbox.place_forget()
+
+
+
+def on_keyrelease(event):
+    typed = entry.get().lower()
+    listbox.delete(0, tk.END)
+    for city in city_coordinates.keys():
+        if typed in city.lower():
+            listbox.insert(tk.END, city)
+    listbox.place(x=1150, y=100)
+
+entry.bind("<KeyRelease>", on_keyrelease)
+
+def on_select(event):
+    if listbox.curselection():  
+        selection = listbox.get(listbox.curselection())
+        entry.delete(0, tk.END)
+        entry.insert(0, selection)
+        listbox.place_forget()
+
+listbox.bind("<<ListboxSelect>>", on_select)
+
+search_icon = Image.open("/Users/tejasy/Desktop/create/search.png").resize((40, 40))
+search_photo = ImageTk.PhotoImage(search_icon)
+
+
+
+def get_weather(city):
+    if city not in city_coordinates:
+        messagebox.showerror("Error", "City not found in the list.")
+        return None
+    
+    global lat
+    global lon
+    lat, lon = city_coordinates[city]
+     
+    url = (
+    f"https://api.open-meteo.com/v1/forecast?"
+    f"latitude={lat}&longitude={lon}&timezone=Asia/Kolkata&"
+    "daily=temperature_2m_min,sunrise,sunset&"
+    "hourly=temperature_2m,relative_humidity_2m,pressure_msl,"
+    "wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation&"
+    "current_weather=true&"
+    "forecast_days=10"
+)
+
+
+    aqi_url = (
+        f"https://air-quality-api.open-meteo.com/v1/air-quality?"
+        f"latitude={lat}&longitude={lon}&timezone=Asia/Kolkata&"
+        "hourly=pm2_5"
+    )
+
+    aqi_response = requests.get(aqi_url)
+    if aqi_response.status_code != 200:
+        print(f"Error fetching AQI data: {aqi_response.status_code} - {aqi_response.text}")
+        return None
+
+    aqi_data_json = aqi_response.json()
+    times = aqi_data_json.get("hourly", {}).get("time", [])
+    pm25_values = aqi_data_json.get("hourly", {}).get("pm2_5", [])
+    now_time = datetime.now().strftime("%Y-%m-%dT%H:00")
+    
+    aqi_value = None
+    if now_time in times:
+        idx = times.index(now_time)
+        aqi_value = pm25_values[idx] if idx < len(pm25_values) else None
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        current = data.get('current_weather', {})
+        current_temp = current.get('temperature', None)
+        hourly = data.get('hourly', {})
+        hourly_times = hourly.get('time', [])
+        current_time = current.get('time')  
+        daily = data.get('daily', {})
+        sunrises = daily.get('sunrise',[None])[0]
+        sunsets = daily.get('sunset',[None])[0]
+        sunrise_dt = datetime.strptime(sunrises, "%Y-%m-%dT%H:%M") if sunrises else None
+        sunset_dt = datetime.strptime(sunsets, "%Y-%m-%dT%H:%M") if sunsets else None
+        weather_code = current['weathercode']
+        if weather_code in [61, 63, 65, 80, 81, 82]:
+         feel_like = "Rainy"
+         bgimage1 = Image.open("/Users/tejasy/Desktop/create/bgr.png").resize((825, 200), Image.Resampling.LANCZOS)
+         bg1=ImageTk.PhotoImage(bgimage1)
+         bgimage2 = Image.open("/Users/tejasy/Desktop/create/bgr.png").resize((220, 600), Image.Resampling.LANCZOS)
+         bg2=ImageTk.PhotoImage(bgimage2)
+         bgimage3 = Image.open("/Users/tejasy/Desktop/create/bgr.png").resize((400,135), Image.Resampling.LANCZOS)
+         bg3=ImageTk.PhotoImage(bgimage3)
+         bgimage4 = Image.open("/Users/tejasy/Desktop/create/bgr.png").resize((300, 180), Image.Resampling.LANCZOS)
+         bg4=ImageTk.PhotoImage(bgimage4)
+         bgimage5 = Image.open("/Users/tejasy/Desktop/create/bgr.png").resize((430, 170), Image.Resampling.LANCZOS)
+         bg5=ImageTk.PhotoImage(bgimage5)
+         bgimage6 = Image.open("/Users/tejasy/Desktop/create/bgr.png").resize((200, 180), Image.Resampling.LANCZOS)
+         bg6=ImageTk.PhotoImage(bgimage6)
+         bgimage7 = Image.open("/Users/tejasy/Desktop/create/bgr.png").resize((200,180), Image.Resampling.LANCZOS)
+         bg7=ImageTk.PhotoImage(bgimage7)
+         bgimage8 = Image.open("/Users/tejasy/Desktop/create/bgr.png").resize((300,120), Image.Resampling.LANCZOS)
+         bg8=ImageTk.PhotoImage(bgimage8)
+
+        elif weather_code in [0, 1]:
+         feel_like = "Sunny"
+         bgimage1 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((825, 200), Image.Resampling.LANCZOS)
+         bg1=ImageTk.PhotoImage(bgimage1)
+         bgimage2 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((220, 600), Image.Resampling.LANCZOS)
+         bg2=ImageTk.PhotoImage(bgimage2)
+         bgimage3 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((400,135), Image.Resampling.LANCZOS)
+         bg3=ImageTk.PhotoImage(bgimage3)
+         bgimage4 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((300, 180), Image.Resampling.LANCZOS)
+         bg4=ImageTk.PhotoImage(bgimage4)
+         bgimage5 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((430, 170), Image.Resampling.LANCZOS)
+         bg5=ImageTk.PhotoImage(bgimage5)
+         bgimage6 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((200, 180), Image.Resampling.LANCZOS)
+         bg6=ImageTk.PhotoImage(bgimage6)
+         bgimage7 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((200,180), Image.Resampling.LANCZOS)
+         bg7=ImageTk.PhotoImage(bgimage7)
+         bgimage8 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((300,120), Image.Resampling.LANCZOS)
+         bg8=ImageTk.PhotoImage(bgimage8)
+        elif weather_code in [2, 3]:
+         feel_like = "Cloudy"
+         bgimage1 = Image.open("/Users/tejasy/Desktop/create/bgbg.png").resize((825, 200), Image.Resampling.LANCZOS)
+         bg1=ImageTk.PhotoImage(bgimage1)
+         bgimage2 = Image.open("/Users/tejasy/Desktop/create/bgbg.png").resize((220, 600), Image.Resampling.LANCZOS)
+         bg2=ImageTk.PhotoImage(bgimage2)
+         bgimage3 = Image.open("/Users/tejasy/Desktop/create/bgbg.png").resize((400,135), Image.Resampling.LANCZOS)
+         bg3=ImageTk.PhotoImage(bgimage3)
+         bgimage4 = Image.open("/Users/tejasy/Desktop/create/bgbg.png").resize((300, 180), Image.Resampling.LANCZOS)
+         bg4=ImageTk.PhotoImage(bgimage4)
+         bgimage5 = Image.open("/Users/tejasy/Desktop/create/bgbg.png").resize((430, 170), Image.Resampling.LANCZOS)
+         bg5=ImageTk.PhotoImage(bgimage5)
+         bgimage6 = Image.open("/Users/tejasy/Desktop/create/bgbg.png").resize((200, 180), Image.Resampling.LANCZOS)
+         bg6=ImageTk.PhotoImage(bgimage6)
+         bgimage7 = Image.open("/Users/tejasy/Desktop/create/bgbg.png").resize((200,180), Image.Resampling.LANCZOS)
+         bg7=ImageTk.PhotoImage(bgimage7)
+         bgimage8 = Image.open("/Users/tejasy/Desktop/create/bgbg.png").resize((300,120), Image.Resampling.LANCZOS)
+         bg8=ImageTk.PhotoImage(bgimage8)
+        else:
+         feel_like = "Mild"
+         bgimage1 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((825, 200), Image.Resampling.LANCZOS)
+         bg1=ImageTk.PhotoImage(bgimage1)
+         bgimage2 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((220, 600), Image.Resampling.LANCZOS)
+         bg2=ImageTk.PhotoImage(bgimage2)
+         bgimage3 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((400,135), Image.Resampling.LANCZOS)
+         bg3=ImageTk.PhotoImage(bgimage3)
+         bgimage4 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((300, 180), Image.Resampling.LANCZOS)
+         bg4=ImageTk.PhotoImage(bgimage4)
+         bgimage5 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((430, 170), Image.Resampling.LANCZOS)
+         bg5=ImageTk.PhotoImage(bgimage5)
+         bgimage6 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((200, 180), Image.Resampling.LANCZOS)
+         bg6=ImageTk.PhotoImage(bgimage6)
+         bgimage7 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((200,180), Image.Resampling.LANCZOS)
+         bg7=ImageTk.PhotoImage(bgimage7)
+         bgimage8 = Image.open("/Users/tejasy/Desktop/create/bgs.png").resize((300,120), Image.Resampling.LANCZOS)
+         bg8=ImageTk.PhotoImage(bgimage8)
+    
+
+        if current_time and current_time in hourly.get('time', []):
+            idx = hourly['time'].index(current_time)
+            current_humidity = hourly.get('relative_humidity_2m', [None])[idx]
+            current_pressure = hourly.get('pressure_msl', [None])[idx]
+            current_wind_gust = hourly.get('wind_gusts_10m', [None])[idx]
+            wind_direction =data.get("current_weather", {}).get("winddirection", None)
+            
+        else:
+            current_humidity = current_pressure = current_wind_gust=wind_direction=sunsets=sunsets=None
+
+        daily = data['daily']
+        daily_dates = daily['time']  
+        daily_min_temps = daily['temperature_2m_min']
+        hourly_times = hourly['time']  
+        hourly_temps = hourly['temperature_2m']    
+        return (current_temp, current_humidity, current_pressure, current_wind_gust, daily_dates, daily_min_temps, hourly_times, hourly_temps, aqi_value,wind_direction,sunrise_dt,sunset_dt,feel_like,bg1,bg2,bg3,bg4,bg5,bg6,bg7,bg8,weather_code)
+
+    else:
+        print(f"Error: {response.status_code} - {response.text}")
+        return None
+
+
+
+
+def show_text():
+    typed = entry.get()
+    weather_data = get_weather(typed)
+    if weather_data is None:
+        return
+    
+    current_temp, current_humidity, current_pressure, current_wind_gust, daily_dates, daily_min_temps, hourly_times, hourly_temps, aqi_value,wind_direction,sunrises,sunsets,feel_like,bg1,bg2,bg3,bg4,bg5,bg6,bg7,bg8,weather_code= weather_data
+    if weather_code in [61, 63, 65, 80, 81, 82]:
+         class AnimatedGIF:
+            main_canvas.delete(bg)
+            def __init__(self, canvas, gif_path):
+              self.canvas = canvas
+              self.image = Image.open(gif_path)
+              self.frames = []
+              try:
+                while True:
+                 frame = self.image.copy().resize((1800,1100))  
+                 tk_frame = ImageTk.PhotoImage(frame)
+                 self.frames.append(tk_frame)
+                 self.image.seek(len(self.frames))
+
+              except EOFError:
+                pass  
+
+              self.image_id = self.canvas.create_image(0, 0, image=self.frames[0], anchor='nw')
+              self.current = 0
+              self.animate()
+     
+            def animate(self):
+              self.current = (self.current + 1) % len(self.frames)
+              self.canvas.itemconfig(self.image_id, image=self.frames[self.current])
+              self.canvas.after(100, self.animate)  
+
+         anim_bg = AnimatedGIF(main_canvas, "/Users/tejasy/Desktop/create/rain.gif")
+
+    elif weather_code in [0, 1]:
+         class AnimatedGIF:
+            def __init__(self,canvas, gif_path):
+              main_canvas.delete(bg)
+              self.canvas = canvas
+              self.image = Image.open(gif_path)
+              self.frames = []
+              try:
+                while True:
+                 frame = self.image.copy().resize((1800,1100))  
+                 tk_frame = ImageTk.PhotoImage(frame)
+                 self.frames.append(tk_frame)
+                 self.image.seek(len(self.frames))
+
+              except EOFError:
+                pass  
+
+              self.image_id = self.canvas.create_image(0, 0, image=self.frames[0], anchor='nw')
+              self.current = 0
+              self.animate()
+     
+            def animate(self):
+              self.current = (self.current + 1) % len(self.frames)
+              self.canvas.itemconfig(self.image_id, image=self.frames[self.current])
+              self.canvas.after(100, self.animate) 
+
+         anim_bg = AnimatedGIF(main_canvas, "/Users/tejasy/Desktop/create/sunny.gif")
+
+    elif weather_code in [2, 3]:
+         class AnimatedGIF:
+            def __init__(self, canvas, gif_path):
+              main_canvas.delete(bg)
+              self.canvas = canvas
+              self.image = Image.open(gif_path)
+              self.frames = []
+              try:
+                while True:
+                 frame = self.image.copy().resize((1800,1100))  
+                 tk_frame = ImageTk.PhotoImage(frame)
+                 self.frames.append(tk_frame)
+                 self.image.seek(len(self.frames))
+              except EOFError:
+                pass  
+
+              self.image_id = self.canvas.create_image(0, 0, image=self.frames[0], anchor='nw')
+              self.current = 0
+              self.animate()
+     
+            def animate(self):
+              self.current = (self.current + 1) % len(self.frames)
+              self.canvas.itemconfig(self.image_id, image=self.frames[self.current])
+              self.canvas.after(100, self.animate)  
+
+         anim_bg = AnimatedGIF(main_canvas, "/Users/tejasy/Desktop/create/cloudy.gif")
+
+    else:
+         class AnimatedGIF:
+            def __init__(self, canvas, gif_path):
+              self.canvas = canvas
+              main_canvas.delete(bg)
+              self.image = Image.open(gif_path)
+              self.frames = []
+              try:
+                while True:
+                 frame = self.image.copy().resize((1800,1100))  
+                 tk_frame = ImageTk.PhotoImage(frame)
+                 self.frames.append(tk_frame)
+                 self.image.seek(len(self.frames))
+              except EOFError:
+                pass 
+
+              self.image_id = self.canvas.create_image(0, 0, image=self.frames[0], anchor='nw')
+              self.current = 0
+              self.animate()
+     
+            def animate(self):
+              self.current = (self.current + 1) % len(self.frames)
+              self.canvas.itemconfig(self.image_id, image=self.frames[self.current])
+              self.canvas.after(100, self.animate)  
+
+         anim_bg = AnimatedGIF(main_canvas, "/Users/tejasy/Desktop/create/mild.gif")
+
+
+    graph_canvas=tk.Canvas(main_canvas,width=825,height=200,bd=0,highlightthickness=0)
+    main_canvas.create_window(425,350, window=graph_canvas, anchor="nw")
+    graph_canvas.bg1 = bg1
+    graph_canvas.create_image(0,0,image=bg1,anchor="nw")
+
+    daily_canvas=tk.Canvas(main_canvas,width=220,height=600,bd=0,highlightthickness=0)
+    main_canvas.create_window(50,475, window=daily_canvas, anchor="nw")
+    daily_canvas.bg2 = bg2
+    daily_canvas.create_image(0,0,image=bg2,anchor="nw")
+
+    air_canvas=tk.Canvas(main_canvas,width=400,height=135,bd=0,highlightthickness=0)
+    main_canvas.create_window(390,725, window=air_canvas, anchor="nw")
+    air_canvas.bg3 = bg3
+    air_canvas.create_image(0,0,image=bg3,anchor="nw")
+
+    sun_canvas=tk.Canvas(main_canvas,width=300,height=180,bd=0,highlightthickness=0)
+    main_canvas.create_window(1000,660, window=sun_canvas, anchor="nw")
+    sun_canvas.bg4 = bg4
+    sun_canvas.create_image(0,0,image=bg4,anchor="nw")
+
+    wind_canvas=tk.Canvas(main_canvas,width=430,height=170,bd=0,highlightthickness=0)
+    main_canvas.create_window(370,910, window=wind_canvas, anchor="nw")
+    wind_canvas.bg5= bg5
+    wind_canvas.create_image(0,0,image=bg5,anchor="nw")
+
+    hum_canvas=tk.Canvas(main_canvas,width=200,height=180,bd=0,highlightthickness=0)
+    main_canvas.create_window(900,900, window=hum_canvas, anchor="nw")
+    hum_canvas.bg6 = bg6
+    hum_canvas.create_image(0,0,image=bg6,anchor="nw")
+
+    pre_canvas=tk.Canvas(main_canvas,width=200,height=180,bd=0,highlightthickness=0)
+    main_canvas.create_window(1170,900, window=pre_canvas,anchor="nw")
+    pre_canvas.bg7 = bg7
+    pre_canvas.create_image(0,0,image=bg7,anchor="nw")
+
+    feel_canvas=tk.Canvas(main_canvas,width=300,height=120,bd=0,highlightthickness=0)
+    main_canvas.create_window(50,220, window=feel_canvas,anchor="nw")
+    feel_canvas.bg8 = bg8
+    feel_canvas.create_image(0,0,image=bg8,anchor="nw")
+
+
+    wind_canvas.create_rectangle(0,50,220,50, outline="black", width=0.5)
+    wind_canvas.create_rectangle(0,100,220,100, outline="black", width=0.5)
+    x =50
+    y =25
+    offset =60
+    for date, temp in zip(daily_dates, daily_min_temps):
+        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        weekday_name = date_obj.strftime("%A")
+        daily_canvas.create_text(x, y, text=weekday_name, fill="black", font=("Arial", 15,"bold"))
+        daily_canvas.create_text(x+130, y, text=f"{temp}°C", fill="black", font=("Arial", 13,"bold"))
+        y += offset
+    main_canvas.create_text(700,100,text=typed,font=("Halvetica",55),fill="White")
+    main_canvas.create_text(700, 170, text=f"{current_temp}°C", font=("Helvetica", 55), fill="white")
+    pre_canvas.create_text(70,25, text="Humidity", fill="black", font=("Arial", 25))
+    pre_canvas.create_text(100,100, text=f"{current_humidity}%", fill="black", font=("Arial", 30))
+    hum_canvas.create_text(50,25, text="Pressure", fill="black", font=("Arial", 20))
+    hum_canvas.create_text(80,100, text=f"{current_pressure} hPa", fill="black", font=("Arial", 25))
+    feel_canvas.create_text(50,30, text=feel_like, fill="black", font=("Arial", 20, "bold"))
+    feel_canvas.create_text(50,60, text=f"{current_temp}°C", fill="black", font=("Arial", 20))  
+    wind_canvas.create_text(35,40, text="Wind", fill="black", font=("Arial", 20, "bold"))
+    wind_canvas.create_text(200,40, text=f"{current_wind_gust} km/h", fill="black", font=("Arial", 15))
+    wind_canvas.create_text(45,90, text="Direction", fill="black", font=("Arial", 18, "bold"))
+    wind_canvas.create_text(200,90, text=wind_direction, fill="black", font=("Arial", 15))
+    air_canvas.create_text(100,40, text=aqi_value, fill="black", font=("Arial", 25))
+    air_canvas.create_text(100,15, text="Air Quality Index", fill="black", font=("Arial",20,"bold"))
+
+    def draw_graph(hourly_times,hourly_temps):
+
+
+     x_values = range(10)
+     temperatures = hourly_temps[:10]
+
+     now = datetime.now()  
+     hours = [(now + timedelta(hours=i)).strftime('%I:%M %p') for i in x_values]
+
+     fig, ax = plt.subplots(figsize=(10,1.25), dpi=100)
+     fig.patch.set_alpha(0)
+     ax.patch.set_alpha(0)
+
+     ax.plot(x_values, temperatures, marker='o', color="orange")
+     ax.fill_between(x_values, temperatures, color="orange", alpha=0.2)
+
+     for x, temp in zip(x_values, temperatures):
+        ax.annotate(
+            f"{temp}°C",
+            xy=(x, temp),
+            xytext=(0, 6),             
+            textcoords='offset points',
+            ha='center',
+            va='bottom',
+            color='white',
+            fontsize=9
+        )
+
+     ax.tick_params(left=False, bottom=False)
+     ax.set_xticks(x_values)
+     ax.set_xticklabels(hours, rotation=45, ha='right', color='black')
+     ax.set_xlabel('Date', color='orange', fontsize=12)
+     ax.set_ylabel('Temp (°C)', color='orange', fontsize=12)
+
+     buf = io.BytesIO()
+     plt.savefig(buf, format='png', transparent=True, bbox_inches='tight', pad_inches=0)
+     plt.close(fig)
+     buf.seek(0)
+
+     img = Image.open(buf)
+     graph_img = ImageTk.PhotoImage(img)
+
+     global graph_img_id, graph_img_ref
+     graph_img_ref = graph_img
+     if 'graph_img_id' in globals():
+        graph_canvas.delete(graph_img_id)
+
+     graph_img_id = graph_canvas.create_image(0,0, image=graph_img, anchor='nw')
+
+
+    def draw_aqi_bar_on_canvas(canvas, x, y, width, height, aqi_value):
+     aqi = max(0, min(aqi_value, 500))
+     marker_x = x + int((aqi / 500) * width)
+     img = Image.open("/Users/tejasy/Desktop/create/bar.png")
+     new_width = 300
+     aspect_ratio = img.height / img.width
+     new_height = int(new_width * aspect_ratio)
+     resized_img = img.resize((new_width, new_height), Image.LANCZOS)
+     gradient_img = ImageTk.PhotoImage(resized_img)
+     global gradient_img_ref
+     gradient_img_ref = gradient_img
+     air_canvas.create_image(10,98, image=gradient_img, anchor='nw')
+     r = 3.5
+     air_canvas.create_oval(marker_x+20 - r, y + height//2 - r, marker_x + r*2, y + height//2 + r,
+                       fill="red", outline="black")
+    
+    def draw_compass(wind_direction):
+   
+     if wind_direction is None:
+        print("Wind direction data not available.")
+        return
+     angle_rad = math.radians(wind_direction)
+     center = 200
+     radius = 63
+     WIND_DIRECTION= wind_direction
+     x1=325
+     y1=85
+     wind_canvas.create_oval(250,10,400,160, outline="black", width=2)
+     tick_length = 10  
+     directions = [("N", 0), ("E", 90), ("S", 180), ("W", 270)]
+     for label, angle in directions:
+        angle_rad = math.radians(angle)
+        x = x1+ radius * math.sin(angle_rad)
+        y = y1- radius * math.cos(angle_rad)
+        wind_canvas.create_text(x, y, text=label, fill="light blue", font=("Arial", 17, "bold"))
+
+        for angle in range(0, 360, 6):
+          if angle in [0, 6, 84, 90, 96, 174, 180, 186, 264, 270, 276]:
+            continue
+          angle_rad = math.radians(angle)
+          x_start = x1 + (radius + 5) * math.sin(angle_rad)
+          y_start = y1 - (radius + 5) * math.cos(angle_rad)
+          x_end = x1 + (radius - tick_length) * math.sin(angle_rad)
+          y_end = y1 - (radius - tick_length) * math.cos(angle_rad)
+          wind_canvas.create_line(x_start, y_start, x_end, y_end, fill="black", width=1)
+     arrow_length = radius-10
+     angle_rad = math.radians(WIND_DIRECTION)
+     x_end = x1+ arrow_length * math.sin(angle_rad)
+     y_end = y1- arrow_length * math.cos(angle_rad)
+     wind_canvas.create_line(x1,y1,x_end,y_end, arrow=tk.LAST, fill="blue", width=4) 
+
+
+
+    def draw_sun_path(canvas, x, y, width, height, sunrise, sunset, current_time=None):
+     center_x = x + width // 2
+     base_y = y + height // 2
+     radius = width // 2 - 20
+
+     sun_canvas.create_arc(x + 20, base_y - radius, x + width - 20, base_y + radius,
+                      start=0, extent=180, style="arc", outline="black", width=2)
+
+     if sunrise:
+        sunrise_str = sunrise.strftime('%-I:%M %p')
+     else:
+        sunrise_str = "N/A"
+
+     if sunset:
+        sunset_str = sunset.strftime('%-I:%M %p')
+     else:
+        sunset_str = "N/A"
+
+     sun_canvas.create_text(x + 23, base_y + radius - 130, text=f"Sunrise: {sunrise_str}", anchor="w", fill="black", font=("Arial", 13))
+     sun_canvas.create_text(x + width - 20, base_y + radius - 130, text=f"Sunset: {sunset_str}", anchor="e", fill="black", font=("Arial", 13))
+
+     sun_canvas.create_text(center_x, y + 20, text="CURRENT TIME", fill="#aaa", font=("Arial", 10, "bold"))
+     sun_canvas.create_text(center_x, y + 40, text=datetime.now().strftime('%-I:%M %p'), fill="black", font=("Arial", 20, "bold"))
+
+     if sunrise is None or sunset is None:
+        return 
+
+     current_time = datetime.now().time()
+
+     def to_seconds(t): return t.hour * 3600 + t.minute * 60 + t.second
+     t1 = to_seconds(sunrise)
+     t2 = to_seconds(sunset)
+     now = to_seconds(current_time)
+
+     progress = 0 if now < t1 else 1 if now > t2 else (now - t1) / (t2 - t1)
+
+     angle_deg = 180 * progress
+     angle_rad = math.radians(angle_deg)
+     sun_x = center_x - radius * math.cos(angle_rad)
+     sun_y = base_y - radius * math.sin(angle_rad)
+
+     sun_canvas.create_oval(sun_x - 6, sun_y - 6, sun_x + 6, sun_y + 6, fill="red", outline="")
+
+    draw_graph(hourly_times,hourly_temps)
+    draw_aqi_bar_on_canvas(air_canvas, x=10, y=95, width=300, height=20,aqi_value=aqi_value)
+    draw_compass(wind_direction)
+    draw_sun_path(sun_canvas, x=10, y=50, width=300, height=200,sunrise=sunrises,sunset=sunsets)
+
+
+search_button = tk.Button(win, image=search_photo, command=show_text, bd=0, bg="white", activebackground="white")
+search_button.image = search_photo
+search_button.place(x=1120, y=28)
+
+win.mainloop()
